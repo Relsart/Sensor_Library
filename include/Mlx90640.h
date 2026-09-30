@@ -4,10 +4,8 @@
 #include "MLX90640_API.h"
 #ifdef WITH_ETL
 #include "etl/delegate.h"
-#define funct etl::delegate
 #else
 #include <functional>
-#define funct std::function
 #endif
 
 namespace thermomatrix
@@ -41,13 +39,18 @@ struct ThermoArray
 class Mlx90640
 {
 public:
+    #ifdef WITH_ETL
     /* Signature: isOk(slaveAddr, sourcePtr, sourceSize, destPtr, destSize, timeoutMs) */
-    using I2C_TxRx = funct<bool(uint16_t, uint8_t*, uint16_t, uint8_t*, uint32_t, uint32_t)>;
+    using I2C_TxRx = etl::delegate<bool(uint16_t, uint8_t*, uint16_t, uint8_t*, uint32_t, uint32_t)>;
     /* Signature: isOk(slaveAddr, sourcePtr, sourceSize, timeoutMs) */
-    using I2C_Tx = funct<bool(uint16_t, uint8_t*, uint16_t, uint32_t)>;
+    using I2C_Tx = etl::delegate<bool(uint16_t, uint8_t*, uint16_t, uint32_t)>;
     /* Signature: isOk(slaveAddr, regAddr, destPtr, destSize) */
-    using I2C_RxDMA = funct<bool(uint16_t, uint16_t, uint8_t*, uint32_t)>;
-
+    using I2C_RxDMA = etl::delegate<bool(uint16_t, uint16_t, uint8_t*, uint32_t)>;
+    #else
+    using I2C_TxRx = std::function<bool(uint16_t, uint8_t*, uint16_t, uint8_t*, uint32_t, uint32_t)>;
+    using I2C_Tx = std::function<bool(uint16_t, uint8_t*, uint16_t, uint32_t)>;
+    using I2C_RxDMA = std::function<bool(uint16_t, uint16_t, uint8_t*, uint32_t)>;
+    #endif
 
     /**
      * @brief Sensor refresh rate configuration
