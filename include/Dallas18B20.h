@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 #include <etl/optional.h>
-#include "driver/Interface.h" // Required from the MCU project!
+#include "Interface.h" // Required from the MCU project!
 
 namespace sensor
 {
