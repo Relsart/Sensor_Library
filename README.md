@@ -53,6 +53,27 @@ A C++ driver for **DS18B20** digital temperature sensor over the OneWire protoco
 // See code example in samples/Ds18b20.cpp 
 ```
 
+## -------------- MH-Z19E carbon dioxide sensor --------------
+
+A lightweight, non-blocking C++ driver for the **MH-Z19E NDIR CO2 sensor**. 
+
+## Features:
+* **Interrupt-Driven UART:** Uses a lock-free ring buffer to capture incoming data inside the ISR without dropping bytes.
+* **Non-blocking Parser:** Processes the 9-byte data frame from the sensor in the main loop context.
+* **Measurements:** Get valid (checked by CRC) data of CO2 concentration (400..10000ppm, uint16_t) and air temperature (C degs, int8_t).
+
+## Usage:
+
+- MH-Z19E requires a 5V supply (+-0.1V).
+- Configure UART port to baudratee 9600, frame 8n1, none parity.
+- After powering on it takes several seconds to load and start MH-Z19E internal firmware. During this time sensor sends info ASCII data
+at baudrate 115200, that should be ignored (it may be used a timer delay). Working data exchange via UART realises at baudrate 9600.
+- Subscribe callbacks for deferred data handling (according to project type: RTOS-based or MainLoop).
+
+```c++
+// See code example in samples/MHZ19E.cpp
+```
+
 ## Contacts
 
 relsartmail@gmail.com
