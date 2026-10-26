@@ -2,11 +2,7 @@
 
 #include <stdint.h>
 #include "MLX90640_API.h"
-#ifdef WITH_ETL
-#include "etl/delegate.h"
-#else
-#include <functional>
-#endif
+#include "Interface.h"
 
 namespace thermomatrix
 {
@@ -39,19 +35,6 @@ struct ThermoArray
 class Mlx90640
 {
 public:
-    #ifdef WITH_ETL
-    /* Signature: isOk(slaveAddr, sourcePtr, sourceSize, destPtr, destSize, timeoutMs) */
-    using I2C_TxRx = etl::delegate<bool(uint16_t, uint8_t*, uint16_t, uint8_t*, uint32_t, uint32_t)>;
-    /* Signature: isOk(slaveAddr, sourcePtr, sourceSize, timeoutMs) */
-    using I2C_Tx = etl::delegate<bool(uint16_t, uint8_t*, uint16_t, uint32_t)>;
-    /* Signature: isOk(slaveAddr, regAddr, destPtr, destSize) */
-    using I2C_RxDMA = etl::delegate<bool(uint16_t, uint16_t, uint8_t*, uint32_t)>;
-    #else
-    using I2C_TxRx = std::function<bool(uint16_t, uint8_t*, uint16_t, uint8_t*, uint32_t, uint32_t)>;
-    using I2C_Tx = std::function<bool(uint16_t, uint8_t*, uint16_t, uint32_t)>;
-    using I2C_RxDMA = std::function<bool(uint16_t, uint16_t, uint8_t*, uint32_t)>;
-    #endif
-
     /**
      * @brief Sensor refresh rate configuration
      */
@@ -69,7 +52,7 @@ public:
      * @param [in] i2c Periphery driver class
      * @param [in] devAddr Slave i2c address
      */
-    Mlx90640(uint16_t devAddr);
+    Mlx90640(i_face::I_I2C& i2c, i_face::I_DmaBuffer& readBuffer, uint16_t devAddr);
 
     /**
      * @brief Sensor initialisation sequence
@@ -112,33 +95,26 @@ public:
     bool dataHandle();
 
     /**
-     * @brief Setting i2c driver callbacks
-     */
-    void setI2cTxRx(I2C_TxRx h);
-    void setI2cTx(I2C_Tx h);
-    void setI2cRxDMA(I2C_RxDMA h);
-
-    /**
      * @brief Get address of ready measurements buffer
      */
     const ThermoArray* getMeasurements();
     
 private:
-    I2C_TxRx m_i2cTxRx;     // I2C PIO receive-transmit callback
-    I2C_Tx m_i2cTx;         // I2C PIO transmit callback
-    I2C_RxDMA m_i2cRxDMA;   // I2C DMA receive callback
-
+    static constexpr uint16_t m_minimalBuffSize = 1668;
     static constexpr uint16_t m_PixelsNum = MLX90640_PIXEL_NUM;
-    const uint16_t m_i2cAddr;       // Sensor I2C slave address
-    paramsMLX90640 m_params;        // Internal parametersfrom sensor
-    uint16_t m_rawBuffer[1000]{0};  // Buffer for receiving raw data from sensor
-    uint16_t* const m_pixelsArea;   // Address of Pixels area in the Raw Data Buffer
-    uint16_t* const m_auxArea;      // Address of Aux area in the Raw Data Buffer
-    uint16_t* const m_controlArea;  // Address of Control Register value in the Raw Data Buffer
-    uint16_t* const m_stateArea;    // Address of State Register value in the Raw Data Buffer
-    bool m_subpage0 = false;        // Flag: subpage 0 has received
-    bool m_subpage1 = false;        // Flag: subpage 1 has received
-    ThermoArray m_txMeasuresPack;   // Data for external signal exchanging
+
+    const uint16_t m_i2cAddr;           // Sensor I2C slave address
+    i_face::I_I2C& m_i2c;               // I2C interface
+    i_face::I_DmaBuffer& m_dmaRxBuffer; // Buffer for receiving raw data from sensor
+    uint16_t* const m_rxBufferAddr;     // Address of Raw Data Buffer (also the start of Pixels area)
+    uint16_t* const m_auxArea;          // Address of Aux area in the Raw Data Buffer
+    uint16_t* const m_controlArea;      // Address of Control Register value in the Raw Data Buffer
+    uint16_t* const m_stateArea;        // Address of State Register value in the Raw Data Buffer
+    uint16_t m_state;                   // Saved State
+    paramsMLX90640 m_params;            // Internal parametersfrom sensor
+    bool m_subpage0 = false;            // Flag: subpage 0 has received
+    bool m_subpage1 = false;            // Flag: subpage 1 has received
+    ThermoArray m_txMeasuresPack;       // Data for external signal exchanging
 
     float m_measurBuffer[m_PixelsNum]{0};   // Buffer for ready measurements (pixels values in degC)
     const uint32_t m_FrameTimeoutMs = 2000; // Timeout (in ms) value for waiting sensor measurements are complete
@@ -165,7 +141,7 @@ private:
      * @param [in] buffer Destination address
      * @param [in] size Number of words (uint16_t)
      */
-    bool readMemory(uint16_t startAddr, uint16_t* buffer, uint16_t size);
+    bool readMemory(uint16_t startAddr, uint16_t size, uint16_t bufferOffset);
 
     /**
      * @brief Convert the Raw Buffer units to MSB first format

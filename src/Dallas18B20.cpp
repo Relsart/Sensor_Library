@@ -53,8 +53,8 @@ void D18B20::timerHandler()
             Log(lmExtLibs, Error) << "DS18B20: " << Log::Base::Hex << m_request[i].id.romPack << " reading failed";
             continue;
         }
-        uint16_t tempRaw = m_scratchBuffer[0] | (m_scratchBuffer[1] << 8);;
-	    Resolution resolution = static_cast<Resolution>((m_scratchBuffer[4] & 0x60) >> 5);
+        uint16_t tempRaw = m_scratchBuffer[0] | (m_scratchBuffer[1] << 8U);;
+	    Resolution resolution = static_cast<Resolution>((m_scratchBuffer[4] & 0x60U) >> 5U);
         auto meas = calcTemperature(tempRaw, resolution);
         if (meas.has_value())
         {
@@ -107,7 +107,7 @@ D18B20::Resolution D18B20::getResolution(const i_face::I_OneWire::DeviceRomId* s
 {
     if (!sensId || !readScratchpad(sensId))
         return Resolution::ResNone;
-    uint8_t value = ((m_scratchBuffer[4] & 0x60) >> 5);
+    uint8_t value = ((m_scratchBuffer[4] & 0x60) >> 5U);
     Resolution result = (value <= Resolution::Res_12Bit) ? static_cast<Resolution>(value) : Resolution::ResNone;
     return result;
 }
@@ -140,7 +140,7 @@ bool D18B20::init(const i_face::I_OneWire::DeviceRomId* sensId, Resolution resSe
     
     /* Write and save the new resolution value: */
     const uint8_t ResolPos = 5;
-    m_scratchBuffer[4] &= ~(3 << ResolPos);
+    m_scratchBuffer[4] &= ~(3U << ResolPos);
     m_scratchBuffer[4] |= (static_cast<uint8_t>(resSet) << ResolPos);
     uint8_t temp = m_scratchBuffer[4];
     writeScratchpad(sensId);
