@@ -10,7 +10,7 @@ void sandbox()
     /* Periphery subscribing: */
     m_thermoDriver.setI2cTx(thermomatrix::Mlx90640::I2C_Tx::create<driver::I2C, &driver::I2C::masterTx>(*m_i2c));
     m_thermoDriver.setI2cTxRx(thermomatrix::Mlx90640::I2C_TxRx::create<driver::I2C, &driver::I2C::masterTxRx>(*m_i2c));
-    m_thermoDriver.setI2cRxDMA(thermomatrix::Mlx90640::I2C_RxDMA::create<driver::I2C, &driver::I2C::readRegViaDMA_16bitAddr>(*m_i2c));
+    m_thermoDriver.setI2cRxDMA(thermomatrix::Mlx90640::I2C_RxDMA::create<driver::I2C, &driver::I2C::read16bReg_DMA>(*m_i2c));
 
     /* Initialization and EEPROM parameters reading: */
     if (!m_thermoDriver.init(thermomatrix::Mlx90640::RefreshRate::Rate8HZ))
