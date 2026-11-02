@@ -110,10 +110,9 @@ private:
 
     static constexpr uint8_t m_ScratchpadSize = 9;
     uint8_t m_scratchBuffer[m_ScratchpadSize]{0};   // Buffer for sensors scratchpad reading
-
-    Request* m_request = nullptr;           // Current request(s) array
-    uint32_t m_requestCount = 0;            // Number of requests (sensors to read)
-    uint32_t m_timerSet = m_WaitTimes[3];   // Timer set for conversion waiting
+    Request* m_request = nullptr;                   // Current request(s) array
+    uint32_t m_requestCount = 0;                    // Number of requests (sensors to read)
+    uint32_t m_timerSet = m_WaitTimes[3];           // Timer set for conversion waiting
 
     /**
      * @brief Timer handler: get the measurement results from requested sensors

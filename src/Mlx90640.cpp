@@ -1,4 +1,5 @@
 #include "Mlx90640.h"
+#include "melexis_mlx90640/MLX90640_API.h"
 
 namespace thermomatrix
 {
@@ -6,6 +7,9 @@ namespace thermomatrix
     768-831 aux
     832 control register
     833 status register */
+
+static_assert(sizeof(paramsMLX90640) <= Mlx90640::m_ParamsStorageSize, "StorageSize in Mlx90640.h is too small!");
+static_assert(alignof(paramsMLX90640) <= alignof(void*), "Storage align in Mlx90640.h is incorrect!");
 
 Mlx90640::Mlx90640(i_face::I_I2C& i2c, i_face::I_DmaBuffer& readBuffer, uint16_t devAddr) : 
     m_i2cAddr(devAddr),
@@ -23,6 +27,8 @@ Mlx90640::Mlx90640(i_face::I_I2C& i2c, i_face::I_DmaBuffer& readBuffer, uint16_t
         __asm volatile("bkpt #0"); 
         while(1);
     }
+    /* Sensors parameters struct static allocation: */
+    m_params = new(m_paramsStorage) paramsMLX90640();
 }
 
 const ThermoArray* Mlx90640::getMeasurements()
@@ -48,11 +54,13 @@ bool Mlx90640::init(RefreshRate refreshRate)
 
 bool Mlx90640::readParameters()
 {
+    if (!m_params)
+        return false;
     /* Read dump and extract parameters */
     if (!readRegister(MLX90640_EEPROM_START_ADDRESS, m_rxBufferAddr, MLX90640_EEPROM_DUMP_NUM))
         return false;
 
-    return (MLX90640_ExtractParameters(m_rxBufferAddr, &m_params) == MLX90640_NO_ERROR);
+    return (MLX90640_ExtractParameters(m_rxBufferAddr, m_params) == MLX90640_NO_ERROR);
 }
 
 bool Mlx90640::isFrameReady()
@@ -143,6 +151,9 @@ void Mlx90640::shiftBufferBytes()
 
 bool Mlx90640::dataHandle()
 {
+    if (!m_params)
+        return false;
+
     shiftBufferBytes();
     if (ValidateAuxData(m_auxArea) != MLX90640_NO_ERROR)
         return false;
@@ -150,11 +161,11 @@ bool Mlx90640::dataHandle()
         return false;
 
     float emissivity = 0.95;
-    float Ta = MLX90640_GetTa(m_rxBufferAddr, &m_params);
+    float Ta = MLX90640_GetTa(m_rxBufferAddr, m_params);
     float tr = Ta - TA_SHIFT;
 
     *m_stateArea = m_state;    // Put state value (subpage flag) to the raw buffer (for further calculation)
-    MLX90640_CalculateTo(m_rxBufferAddr, &m_params, emissivity, tr, m_measurBuffer);
+    MLX90640_CalculateTo(m_rxBufferAddr, m_params, emissivity, tr, m_measurBuffer);
     if (*m_stateArea == 0)
         m_subpage0 = true;
     else
