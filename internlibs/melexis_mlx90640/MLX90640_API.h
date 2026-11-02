@@ -86,7 +86,7 @@
 extern "C" {
 #endif
 
-typedef struct
+typedef struct paramsMLX90640 
     {
         int16_t kVdd;
         int16_t vdd25;

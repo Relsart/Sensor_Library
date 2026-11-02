@@ -1,8 +1,9 @@
 #pragma once
 
 #include <stdint.h>
-#include "MLX90640_API.h"
 #include "Interface.h"
+
+struct paramsMLX90640;  // Forward declaration of EEPROM parameters struct
 
 namespace thermomatrix
 {
@@ -20,6 +21,7 @@ struct ThermoArray
  * @brief Driver for thermosensor MLX90640
  * 
  * @details operations sequence:
+ * 
  *  1. Create instance and invoke the init method;
  *  2. Invoke the readParameters method (for getting sensors parameters)
  * 
@@ -35,6 +37,7 @@ struct ThermoArray
 class Mlx90640
 {
 public:
+    static constexpr size_t m_ParamsStorageSize = 4732;    // Max size of paramsMLX90640 struct
     /**
      * @brief Sensor refresh rate configuration
      */
@@ -101,7 +104,7 @@ public:
     
 private:
     static constexpr uint16_t m_minimalBuffSize = 1668;
-    static constexpr uint16_t m_PixelsNum = MLX90640_PIXEL_NUM;
+    static constexpr uint16_t m_PixelsNum = 768;
 
     const uint16_t m_i2cAddr;           // Sensor I2C slave address
     i_face::I_I2C& m_i2c;               // I2C interface
@@ -111,13 +114,19 @@ private:
     uint16_t* const m_controlArea;      // Address of Control Register value in the Raw Data Buffer
     uint16_t* const m_stateArea;        // Address of State Register value in the Raw Data Buffer
     uint16_t m_state;                   // Saved State
-    paramsMLX90640 m_params;            // Internal parametersfrom sensor
     bool m_subpage0 = false;            // Flag: subpage 0 has received
     bool m_subpage1 = false;            // Flag: subpage 1 has received
     ThermoArray m_txMeasuresPack;       // Data for external signal exchanging
 
     float m_measurBuffer[m_PixelsNum]{0};   // Buffer for ready measurements (pixels values in degC)
     const uint32_t m_FrameTimeoutMs = 2000; // Timeout (in ms) value for waiting sensor measurements are complete
+
+    /**
+     * @brief Static storage for sensors paramsMLX90640 struct storing
+     * @details Separates original Melexis APIs and this class declaration 
+     */
+    alignas(alignof(void*)) uint8_t m_paramsStorage[m_ParamsStorageSize];
+    paramsMLX90640* m_params;           // Internal parameters from sensor
     
     /**
      * @brief Read register from sensor
